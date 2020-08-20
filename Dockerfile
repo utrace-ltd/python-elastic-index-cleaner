@@ -2,7 +2,7 @@ FROM python:3
 
 MAINTAINER Vladimir Prisyazhnikov <vprisyazhnikov@navicons.ru>
 
-WOKRDIR /opt/python_elastic_index_cleaner
+WORKDIR /opt/python_elastic_index_cleaner
 
 RUN python -m pip install --upgrade pip
 
