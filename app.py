@@ -6,6 +6,7 @@ import requests
 import json
 import re
 import os
+import logging
 
 ELASTIC_HOST = os.environ.get("ELASTIC_HOST")
 ELASTIC_USERNAME = os.environ.get("ELASTIC_USERNAME")
@@ -20,6 +21,9 @@ date_and_index_prod = []
 date_and_index_more = []
 oldest_dates_prod = []
 oldest_dates_more = []
+
+logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s]  %(message)s',
+                    level=logging.INFO)
 
 r = requests.request('GET', ELASTIC_HOST + GET_INDICES,
                      auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
@@ -81,7 +85,7 @@ try:
                     {"index": index_old, "days": rrrr, "state": state_old}
                 )
         except:
-            print('Skip. The date does not meet the requirements.')
+            logging.warning('Skip. The date does not meet the requirements.')
     for date_olds in date_and_index_more:
         try:
             date_old = date_olds["date"]
@@ -97,9 +101,9 @@ try:
                     {"index": index_old, "days": rrrr, "state": state_old}
                 )
         except:
-            print('Skip. The date does not meet the requirements.')
+            logging.warning('Skip. The date does not meet the requirements.')
 except:
-    print('Stage not passed!')
+    logging.warning('Stage not passed!')
 
 def ind(state):
   for ind_d in state:
@@ -108,9 +112,9 @@ def ind(state):
                           str(index_for_delete), auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
       if re.findall('200', str(d)):
         d = "Index deleted"
-        print(index_for_delete, d)
+        print("INFO " + "[" + str(datetime.now()) + "]" + " " + index_for_delete, d)
 
 ind(oldest_dates_prod)
 ind(oldest_dates_more)
 
-print('All specified indexes removed.')
+logging.info('All specified indexes removed.')
