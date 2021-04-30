@@ -15,7 +15,6 @@ COPY app.py ./
 ENV ELASTIC_HOST='https://your_elastic_host:9200'
 ENV ELASTIC_USERNAME='your_elastic_username'
 ENV ELASTIC_PASSWORD='your_elastic_password'
-ENV AMOUNT_OF_DAYS_PROD='number of days min 30 (only number)'
-ENV AMOUNT_OF_DAYS_MORE='number of days min 15 (only number)'
+ENV AMOUNT_OF_DAYS='*-prod-*=30,*-test-*=11, *-stage-*=11,*-stress-test-*=5,*-demo-*=11, *=30'
 
 CMD [ "python", "app.py" ]

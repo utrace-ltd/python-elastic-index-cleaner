@@ -8,22 +8,48 @@ import re
 import os
 import logging
 
+
 ELASTIC_HOST = os.environ.get("ELASTIC_HOST")
 ELASTIC_USERNAME = os.environ.get("ELASTIC_USERNAME")
 ELASTIC_PASSWORD = os.environ.get("ELASTIC_PASSWORD")
-AMOUNT_OF_DAYS_PROD = os.environ.get("AMOUNT_OF_DAYS_PROD")
-AMOUNT_OF_DAYS_MORE = os.environ.get("AMOUNT_OF_DAYS_MORE")
+AMOUNT_OF_DAYS = '*-prod-*=30,*-test-*=11, *-stage-*=11,*-stress-test-*=5,*-demo-*=11, *=30'
 GET_INDICES = '/_cat/indices?format=json&pretty=true'
 
 index_array = []
+index_array2 = []
 only_date = []
-date_and_index_prod = []
 date_and_index_more = []
-oldest_dates_prod = []
+oldest_dates_last = []
+oldest_dates_other = []
 oldest_dates_more = []
+indexes_patterns = []
 
 logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s]  %(message)s',
                     level=logging.INFO)
+
+
+def indexes_patterns_from_env(index_env):
+    pattern_index_name = r'(\W-\w+-\W|\W-\w+-\w+-\W|\W)='
+    pattern_index_numbers = r'=(\d+)'
+    index_name = re.findall(pattern_index_name, index_env)
+    index_numbers = re.findall(pattern_index_numbers, index_env)
+    i = len(index_name)
+    for i in range(0, i):
+        rgxMount = re.compile(
+            '\*-|-\*'
+        )
+
+        if index_name[i] == '*':
+            index_name[i] = "other"
+        else:
+            index_name[i] = rgxMount.sub('', index_name[i])
+
+        indexes_patterns.append(
+            {"name": index_name[i], "amount": index_numbers[i]})
+    return indexes_patterns
+
+
+indexes_patterns_from_env(AMOUNT_OF_DAYS)
 
 r = requests.request('GET', ELASTIC_HOST + GET_INDICES,
                      auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
@@ -33,8 +59,14 @@ dumped_json = json.dumps(pretty_json)
 ready_json = json.loads(dumped_json)
 
 for indexes in ready_json:
-    indexs = indexes["index"]
     index_array.append(
+        indexes["index"]
+    )
+index_array.sort(reverse=True)
+
+for indexes in index_array:
+    indexs = indexes
+    index_array2.append(
         {"index": indexs}
     )
 
@@ -42,79 +74,88 @@ date_now = datetime.now()
 date_now = ('{:%Y.%m.%d}'.format(date_now))
 date_now = parse(date_now, parserinfo=None)
 
-for key in index_array:
-    ssd = key["index"]
-    if re.search('\d\d\d\d.\d\d.\d\d ?', ssd):
+
+for key in index_array2:
+    index = key["index"]
+    if re.search('\d\d\d\d.\d\d.\d\d ?', index):
         only_date.append(
-            {"index": ssd}
+            {"index": index}
         )
 
 for keys in only_date:
-    sssd = keys["index"]
-    allmatches = re.findall(r'\d\d\d\d.\d\d.\d\d', sssd)
+    index = keys["index"]
+    allmatches = re.findall(r'\d\d\d\d.\d\d.\d\d', index)
 
-    prod_or_more = re.findall(r'prod|stage|test|dev', sssd)
-
-    for i in range(0, len(prod_or_more)):
-        if prod_or_more[i] == 'prod':
-            date_and_index_prod.append(
-                {"index": sssd,
-                    "date": allmatches[0], "state": prod_or_more[i]}
-            )
-        elif prod_or_more[i] == 'stage' or 'test' or 'dev':
+    for i in range(0, len(allmatches)):
+        if allmatches[i]:
             date_and_index_more.append(
-                {"index": sssd,
-                    "date": allmatches[0], "state": prod_or_more[i]}
+                {"index": index, "date": allmatches[0]}
             )
 
 rgx = re.compile(' days, 0:00:00| day, 0:00:00| 0:00:00')
 
 try:
-    for date_olds in date_and_index_prod:
-        try:
-            date_old = date_olds["date"]
-            index_old = date_olds["index"]
-            state_old = date_olds["state"]
-
-            date_old = datetime.strptime(date_old, "%Y.%m.%d")
-            deltas = date_now - date_old
-            rrrr = rgx.sub('', str(deltas))
-            rrrr = int(rrrr)
-            if rrrr > int(AMOUNT_OF_DAYS_PROD):
-                oldest_dates_prod.append(
-                    {"index": index_old, "days": rrrr, "state": state_old}
-                )
-        except:
-            logging.warning('Skip. The date does not meet the requirements.')
     for date_olds in date_and_index_more:
         try:
             date_old = date_olds["date"]
             index_old = date_olds["index"]
-            state_old = date_olds["state"]
-
             date_old = datetime.strptime(date_old, "%Y.%m.%d")
             deltas = date_now - date_old
-            rrrr = rgx.sub('', str(deltas))
-            rrrr = int(rrrr)
-            if rrrr > int(AMOUNT_OF_DAYS_MORE):
-                oldest_dates_more.append(
-                    {"index": index_old, "days": rrrr, "state": state_old}
-                )
+            re_sub = rgx.sub('', str(deltas))
+            re_sub = int(re_sub)
+            oldest_dates_more.append(
+                {"index": index_old, "days": re_sub}
+            )
         except:
-            logging.warning('Skip. The date does not meet the requirements.')
+            logging.info('Skip. The date does not meet the requirements.')
 except:
     logging.warning('Stage not passed!')
 
-def ind(state):
-  for ind_d in state:
-      index_for_delete = ind_d["index"]
-      d = requests.request('DELETE', ELASTIC_HOST + '/' +
-                          str(index_for_delete), auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
-      if re.findall('200', str(d)):
-        d = "Index deleted"
-        print("INFO " + "[" + str(datetime.now()) + "]" + " " + index_for_delete, d)
+for ii in range(len(oldest_dates_more)):
+    for i in indexes_patterns:
+        serch_pattern = re.compile(i["name"])
+        for keys in enumerate(oldest_dates_more):
+            number_in_array = keys[0]
+            index = keys[1]["index"]
+            days = keys[1]["days"]
+            matches = serch_pattern.findall(index)
 
-ind(oldest_dates_prod)
-ind(oldest_dates_more)
+            if matches:
+                oldest_dates_last.append(
+                    {"index": index, "days": days, "state": i["name"]}
+                )
+                del oldest_dates_more[number_in_array]
+
+logging.info("=== I clean according to the specified parameters ===")
+
+for keys in oldest_dates_last:
+    for i in indexes_patterns:
+        name = i["name"]
+        state = keys["state"]
+        days = keys["days"]
+        index_for_delete = keys["index"]
+        if name == state and int(days) > int(i["amount"]):
+            d = requests.request('DELETE', ELASTIC_HOST + '/' +
+                                 str(index_for_delete), auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
+            if re.findall('200', str(d)):
+                d = "Index deleted"
+                print("INFO " + "   [" + str(datetime.now()
+                                             ) + "]" + " " + index_for_delete, d)
+
+logging.info("=== I clear the rest according to the specified parameters ===")
+
+for i in indexes_patterns:
+    for keys in enumerate(oldest_dates_more):
+        serch_pattern = re.compile("other")
+        name = i["name"]
+        days = keys[1]["days"]
+        index_for_delete = keys[1]["index"]
+        if name == "other" and int(days) > int(i["amount"]):
+            d = requests.request('DELETE', ELASTIC_HOST + '/' +
+                                 str(index_for_delete), auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
+            if re.findall('200', str(d)):
+                d = "Index deleted"
+                print("INFO " + "   [" + str(datetime.now()
+                                             ) + "]" + " " + index_for_delete, d)
 
 logging.info('All specified indexes removed.')
