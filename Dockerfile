@@ -1,12 +1,12 @@
-FROM alpine:latest
+FROM python:3.8-slim
 
 MAINTAINER Vladimir Prisyazhnikov <vprisyazhnikov@navicons.ru>
 
 WORKDIR /opt/python_elastic_index_cleaner
 
-RUN apk --no-cache add python3 py3-pip
-
 COPY requirements.txt ./
+
+RUN pip3 install --no-cache-dir --upgrade pip
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
