@@ -12,7 +12,7 @@ import logging
 ELASTIC_HOST = os.environ.get("ELASTIC_HOST")
 ELASTIC_USERNAME = os.environ.get("ELASTIC_USERNAME")
 ELASTIC_PASSWORD = os.environ.get("ELASTIC_PASSWORD")
-AMOUNT_OF_DAYS = '*-prod-*=30,*-test-*=11, *-stage-*=11,*-stress-test-*=5,*-demo-*=11, *=30'
+AMOUNT_OF_DAYS = os.environ.get("AMOUNT_OF_DAYS")
 GET_INDICES = '/_cat/indices?format=json&pretty=true'
 
 index_array = []
@@ -126,8 +126,6 @@ for ii in range(len(oldest_dates_more)):
                 )
                 del oldest_dates_more[number_in_array]
 
-logging.info("=== I clean according to the specified parameters ===")
-
 for keys in oldest_dates_last:
     for i in indexes_patterns:
         name = i["name"]
@@ -141,8 +139,6 @@ for keys in oldest_dates_last:
                 d = "Index deleted"
                 print("INFO " + "   [" + str(datetime.now()
                                              ) + "]" + " " + index_for_delete, d)
-
-logging.info("=== I clear the rest according to the specified parameters ===")
 
 for i in indexes_patterns:
     for keys in enumerate(oldest_dates_more):
