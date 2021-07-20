@@ -8,10 +8,11 @@ import re
 import os
 import logging
 
+ELASTIC_HOST = os.getenv("ELASTIC_HOST", "http://elastic:9200")
+ELASTIC_USERNAME = os.getenv("ELASTIC_USERNAME", "elastic")
+ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD", "elastic")
+SSL_CERTIFICATE_VERIFY = os.getenv("SSL_CERTIFICATE_VERIFY", "true") == 'true'
 
-ELASTIC_HOST = os.environ.get("ELASTIC_HOST")
-ELASTIC_USERNAME = os.environ.get("ELASTIC_USERNAME")
-ELASTIC_PASSWORD = os.environ.get("ELASTIC_PASSWORD")
 AMOUNT_OF_DAYS = os.environ.get("AMOUNT_OF_DAYS")
 GET_INDICES = '/_cat/indices?format=json&pretty=true'
 
@@ -51,8 +52,8 @@ def indexes_patterns_from_env(index_env):
 
 indexes_patterns_from_env(AMOUNT_OF_DAYS)
 
-r = requests.request('GET', ELASTIC_HOST + GET_INDICES,
-                     auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
+r = requests.request('GET', ELASTIC_HOST + GET_INDICES, auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD),
+                     verify=SSL_CERTIFICATE_VERIFY)
 
 pretty_json = r.json()
 dumped_json = json.dumps(pretty_json)
@@ -134,7 +135,8 @@ for keys in oldest_dates_last:
         index_for_delete = keys["index"]
         if name == state and int(days) > int(i["amount"]):
             d = requests.request('DELETE', ELASTIC_HOST + '/' +
-                                 str(index_for_delete), auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
+                                 str(index_for_delete), auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD),
+                                 verify=SSL_CERTIFICATE_VERIFY)
             if re.findall('200', str(d)):
                 d = "Index deleted"
                 print("INFO " + "   [" + str(datetime.now()
@@ -148,7 +150,8 @@ for i in indexes_patterns:
         index_for_delete = keys[1]["index"]
         if name == "other" and int(days) > int(i["amount"]):
             d = requests.request('DELETE', ELASTIC_HOST + '/' +
-                                 str(index_for_delete), auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
+                                 str(index_for_delete), auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD),
+                                 verify=SSL_CERTIFICATE_VERIFY)
             if re.findall('200', str(d)):
                 d = "Index deleted"
                 print("INFO " + "   [" + str(datetime.now()
