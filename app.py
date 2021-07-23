@@ -7,6 +7,7 @@ import json
 import re
 import os
 import logging
+import urllib3
 
 ELASTIC_HOST = os.getenv("ELASTIC_HOST", "http://elastic:9200")
 ELASTIC_USERNAME = os.getenv("ELASTIC_USERNAME", "elastic")
@@ -24,6 +25,8 @@ oldest_dates_last = []
 oldest_dates_other = []
 oldest_dates_more = []
 indexes_patterns = []
+
+urllib3.disable_warnings()
 
 logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s]  %(message)s',
                     level=logging.INFO)
