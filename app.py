@@ -111,7 +111,7 @@ try:
                 {"index": index_old, "days": re_sub}
             )
         except:
-            logging.info('Skip. The date does not meet the requirements.')
+            logging.info('Skip. The date does not meet the requirements: ' + index_old)
 except:
     logging.warning('Stage not passed!')
 

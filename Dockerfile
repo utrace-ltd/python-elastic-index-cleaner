@@ -2,9 +2,13 @@ FROM python:3.8-slim
 
 MAINTAINER Vladimir Prisyazhnikov <vprisyazhnikov@navicons.ru>
 
+ENV TZ=Europe/Moscow
+
 WORKDIR /opt/python_elastic_index_cleaner
 
 COPY requirements.txt ./
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN pip3 install --no-cache-dir --upgrade pip
 
