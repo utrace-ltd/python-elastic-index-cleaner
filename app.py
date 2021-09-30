@@ -33,7 +33,7 @@ logging.basicConfig(format=u'%(levelname)-8s [%(asctime)s]  %(message)s',
 
 
 def indexes_patterns_from_env(index_env):
-    pattern_index_name = r'(\W-\w+-\W|\W-\w+-\w+-\W|\W)='
+    pattern_index_name = r'(\W-\w+-\W|\W-\w+-\w+-\W|\w+-\W|\W)='
     pattern_index_numbers = r'=(\d+)'
     index_name = re.findall(pattern_index_name, index_env)
     index_numbers = re.findall(pattern_index_numbers, index_env)
@@ -52,8 +52,6 @@ def indexes_patterns_from_env(index_env):
             {"name": index_name[i], "amount": index_numbers[i]})
     return indexes_patterns
 
-
-indexes_patterns_from_env(AMOUNT_OF_DAYS)
 
 r = requests.request('GET', ELASTIC_HOST + GET_INDICES, auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD),
                      verify=SSL_CERTIFICATE_VERIFY)
@@ -111,7 +109,8 @@ try:
                 {"index": index_old, "days": re_sub}
             )
         except:
-            logging.info('Skip. The date does not meet the requirements: ' + index_old)
+            logging.info(
+                'Skip. The date does not meet the requirements: ' + index_old)
 except:
     logging.warning('Stage not passed!')
 
