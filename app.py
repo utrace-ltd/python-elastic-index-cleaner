@@ -53,6 +53,8 @@ def indexes_patterns_from_env(index_env):
     return indexes_patterns
 
 
+indexes_patterns_from_env(AMOUNT_OF_DAYS)
+
 r = requests.request('GET', ELASTIC_HOST + GET_INDICES, auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD),
                      verify=SSL_CERTIFICATE_VERIFY)
 
